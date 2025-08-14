@@ -1,5 +1,5 @@
 // ★ 換成你的 Apps Script Web App URL（/exec）
-const API_BASE = '<<YOUR_GAS_WEB_APP_URL>>';
+const API_BASE = 'https://script.google.com/macros/s/AKfycby8mn_2I-eaVC27j8YmVKhaLOf9nwMW-SCOqbTPmHZGXJYMUV_UJeWyOMleUZyqM5EK/exec';
 
 // 狀態
 const els = {
