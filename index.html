@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>內部功能清單</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <section id="auth-section">
+      <h1>功能清單登入</h1>
+      <div class="card">
+        <label>請輸入密碼</label>
+        <input type="password" id="password" placeholder="Password" />
+        <button id="loginBtn">登入</button>
+        <p class="error" id="authError" style="display:none;"></p>
+      </div>
+    </section>
+
+    <section id="list-section" class="hidden">
+      <header class="topbar">
+        <h1>功能清單</h1>
+        <div class="actions">
+          <input type="search" id="search" placeholder="搜尋名稱/標籤/分類" />
+          <button id="logoutBtn">登出</button>
+        </div>
+      </header>
+      <div id="items" class="grid"></div>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
