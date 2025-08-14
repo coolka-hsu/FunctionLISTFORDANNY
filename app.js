@@ -1,89 +1,90 @@
-// ★ 換成你的 Apps Script Web App URL（/exec）
-const API_BASE = 'https://script.google.com/macros/s/AKfycby8mn_2I-eaVC27j8YmVKhaLOf9nwMW-SCOqbTPmHZGXJYMUV_UJeWyOMleUZyqM5EK/exec';
+/***** 1) 設定你的試算表資訊 *****/
+const SHEET_ID = '11DLlDZKMUlnfxuZ3_XcsQBcHwTOdkPNr5KVUByLiDIo';
+const GID      = '0';
 
-// 狀態
+/***** 2) gviz JSONP 來源 (免 CORS) *****/
+function buildGvizUrl() {
+  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+  const params = new URLSearchParams({ gid: GID, tqx: 'out:json' });
+  return `${base}?${params.toString()}`;
+}
+
+/***** 3) 載入 + 解析 gviz JSON *****/
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+
+    // 攔截 gviz 的固定回呼
+    const prev = window.google && window.google.visualization && window.google.visualization.Query && window.google.visualization.Query.setResponse;
+    const googleNS = window.google = window.google || {};
+    googleNS.visualization = googleNS.visualization || {};
+    googleNS.visualization.Query = googleNS.visualization.Query || {};
+    googleNS.visualization.Query.setResponse = function(resp) {
+      try { resolve(resp); } finally {
+        if (prev) googleNS.visualization.Query.setResponse = prev;
+        else delete googleNS.visualization.Query.setResponse;
+        script.remove();
+      }
+    };
+
+    script.src = url;
+    script.onerror = () => { reject(new Error('JSONP failed')); script.remove(); };
+    document.body.appendChild(script);
+  });
+}
+
+function gvizToObjects(resp) {
+  const cols = resp.table.cols.map(c => (c.label || c.id || '').trim());
+  const rows = (resp.table.rows || []).map(r => r.c.map(c => c ? c.v : ''));
+  return rows.map(r => {
+    const obj = {};
+    cols.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+}
+
+/***** 4) UI 與渲染（沿用你現有 index.html/styles.css） *****/
 const els = {
-  authSection: document.getElementById('auth-section'),
-  listSection: document.getElementById('list-section'),
-  pwd: document.getElementById('password'),
-  loginBtn: document.getElementById('loginBtn'),
-  logoutBtn: document.getElementById('logoutBtn'),
-  authError: document.getElementById('authError'),
   items: document.getElementById('items'),
-  search: document.getElementById('search')
+  search: document.getElementById('search'),
+  category: document.getElementById('category'),
+  status: document.getElementById('status')
 };
 
-function getToken() { return sessionStorage.getItem('token') || ''; }
-function setToken(t) { sessionStorage.setItem('token', t); }
-function clearToken() { sessionStorage.removeItem('token'); }
+let allItems = [];
 
-function showListUI() {
-  els.authSection.classList.add('hidden');
-  els.listSection.classList.remove('hidden');
-}
-function showAuthUI() {
-  els.listSection.classList.add('hidden');
-  els.authSection.classList.remove('hidden');
+function uniqueSorted(arr) {
+  return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b),'zh-Hant'));
 }
 
-async function login() {
-  els.authError.style.display = 'none';
-  const password = els.pwd.value.trim();
-  if (!password) return;
-  try {
-    const res = await fetch(`${API_BASE}?path=auth`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ password })
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '登入失敗');
-    setToken(data.token);
-    els.pwd.value = '';
-    showListUI();
-    await loadList();
-  } catch (err) {
-    els.authError.textContent = '登入錯誤：' + err.message;
-    els.authError.style.display = 'block';
-  }
+function fillFilters(items) {
+  const cats = uniqueSorted(items.map(x => x.category));
+  els.category.innerHTML = '<option value="">全部分類</option>' + cats.map(c=>`<option>${escapeHtml_(c)}</option>`).join('');
 }
 
-async function loadList() {
-  els.items.innerHTML = '載入中…';
-  const token = getToken();
-  try {
-    const res = await fetch(`${API_BASE}?path=list&token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-    if (!data.ok) {
-      if (data.error === 'UNAUTHORIZED') {
-        clearToken();
-        showAuthUI();
-        return;
-      }
-      throw new Error(data.error || '載入失敗');
-    }
-    renderItems(data.items || []);
-  } catch (err) {
-    els.items.innerHTML = `<p class="error">載入發生錯誤：${err.message}</p>`;
-  }
-}
-
-function renderItems(items) {
-  const keyword = els.search.value.trim().toLowerCase();
-  const filtered = items.filter(it => {
+function render() {
+  const kw = (els.search.value || '').trim().toLowerCase();
+  const cat = els.category.value || '';
+  const st  = els.status.value || '';
+  const filtered = allItems.filter(it => {
     const hay = [
-      it.name, it.slug, it.category, it.tags, it.description
+      it.name, it.slug, it.category, it.tags, it.description, it.status
     ].map(x => (x || '').toString().toLowerCase()).join(' ');
-    return !keyword || hay.includes(keyword);
+    const okKw  = !kw || hay.includes(kw);
+    const okCat = !cat || (it.category === cat);
+    const okSt  = !st  || (it.status === st);
+    return okKw && okCat && okSt;
   });
 
   if (filtered.length === 0) {
-    els.items.innerHTML = '<p>沒有符合條件的項目。</p>';
+    els.items.innerHTML = '<p>沒有項目或條件過於嚴格。</p>';
     return;
   }
 
+  filtered.sort((a,b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
+
   els.items.innerHTML = filtered.map(it => {
-    const tags = (it.tags || '').toString().split(',').map(s => s.trim()).filter(Boolean);
+    const tags = String(it.tags || '').split(',').map(s => s.trim()).filter(Boolean);
     const updated = it.updated_at ? new Date(it.updated_at).toLocaleDateString() : '';
     return `
       <div class="item">
@@ -109,12 +110,34 @@ function escapeHtml_(s) {
     .replaceAll('"','&quot;').replaceAll("'","&#039;");
 }
 
-els.loginBtn.addEventListener('click', login);
-els.logoutBtn.addEventListener('click', () => { clearToken(); showAuthUI(); });
-els.pwd.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-els.search.addEventListener('input', () => loadList());
-
-// 自動嘗試用 token 載入
+/***** 5) 初始化 *****/
 (async () => {
-  if (getToken()) { showListUI(); await loadList(); }
+  try {
+    const resp = await jsonp(buildGvizUrl());
+    const items = gvizToObjects(resp);
+
+    // 如果你的表頭是中文名稱，這裡提供一個映射範例（取消註解後依你的表頭調整）
+    // const mapped = items.map(x => ({
+    //   name: x['名稱'] || x['name'],
+    //   slug: x['代稱'] || x['slug'],
+    //   description: x['說明'] || x['description'],
+    //   category: x['分類'] || x['category'],
+    //   tags: x['標籤'] || x['tags'],
+    //   demo_url: x['Demo連結'] || x['demo_url'],
+    //   repo_url: x['Repo連結'] || x['repo_url'],
+    //   status: x['狀態'] || x['status'],
+    //   updated_at: x['更新日期'] || x['updated_at'],
+    //   note: x['備註'] || x['note'],
+    // }));
+
+    allItems = items; // 或 mapped
+    fillFilters(allItems);
+    render();
+
+    els.search.addEventListener('input', render);
+    els.category.addEventListener('change', render);
+    els.status.addEventListener('change', render);
+  } catch (e) {
+    els.items.innerHTML = `<p class="error">載入發生錯誤：${e.message}</p>`;
+  }
 })();
