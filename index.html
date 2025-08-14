@@ -2,31 +2,31 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>內部功能清單</title>
+  <title>功能清單（暫無登入）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="container">
-    <section id="auth-section">
-      <h1>功能清單登入</h1>
-      <div class="card">
-        <label>請輸入密碼</label>
-        <input type="password" id="password" placeholder="Password" />
-        <button id="loginBtn">登入</button>
-        <p class="error" id="authError" style="display:none;"></p>
+    <header class="topbar">
+      <h1>功能清單</h1>
+      <div class="actions">
+        <input type="search" id="search" placeholder="搜尋名稱/標籤/分類" />
+        <select id="category">
+          <option value="">全部分類</option>
+        </select>
+        <select id="status">
+          <option value="">全部狀態</option>
+          <option>完成</option>
+          <option>開發中</option>
+          <option>測試中</option>
+          <option>已下線</option>
+        </select>
       </div>
-    </section>
+    </header>
 
-    <section id="list-section" class="hidden">
-      <header class="topbar">
-        <h1>功能清單</h1>
-        <div class="actions">
-          <input type="search" id="search" placeholder="搜尋名稱/標籤/分類" />
-          <button id="logoutBtn">登出</button>
-        </div>
-      </header>
-      <div id="items" class="grid"></div>
+    <section>
+      <div id="items" class="grid">載入中…</div>
     </section>
   </main>
   <script src="./app.js"></script>
