@@ -1,17 +1,10 @@
 * { box-sizing: border-box; }
 body { font-family: system-ui, "Noto Sans TC", Arial, sans-serif; background:#f6f7f9; margin:0; }
 .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-.hidden { display: none; }
-h1 { margin: 0 0 12px; }
-.card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,.06); }
-label { display:block; margin:8px 0; font-weight:600; }
-input[type="password"], input[type="search"] { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; }
-button { padding:10px 16px; border:0; border-radius:10px; background:#3b82f6; color:#fff; cursor:pointer; }
-button:hover { filter: brightness(1.05); }
-.error { color:#d00; margin-top:8px; }
+h1 { margin: 0; }
 .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
-.topbar .actions { display:flex; gap:10px; width:60%; }
-.topbar input[type="search"] { flex:1; }
+.actions { display:flex; gap:10px; flex-wrap:wrap; }
+.actions input, .actions select { padding:10px; border:1px solid #ddd; border-radius:8px; }
 .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:16px; }
 .item { background:#fff; border:1px solid #eee; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:8px; }
 .item h3 { margin:0; font-size:18px; }
